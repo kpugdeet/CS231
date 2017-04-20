@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="3086607c-d4d7-48dc-a14b-6cde2fd71417" name="128.203.028.15" url="http://128.230.208.15">
+        <fileTransfer host="128.230.208.15" port="22" rootFolder="/home/krit" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
