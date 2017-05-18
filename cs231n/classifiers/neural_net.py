@@ -35,8 +35,10 @@ class TwoLayerNet(object):
     """
     self.params = {}
     self.params['W1'] = std * np.random.randn(input_size, hidden_size)
+    # self.params['W1'] = np.random.randn(input_size, hidden_size) / np.sqrt(input_size)
     self.params['b1'] = np.zeros(hidden_size)
     self.params['W2'] = std * np.random.randn(hidden_size, output_size)
+    # self.params['W2'] = np.random.randn(hidden_size, output_size) / np.sqrt(hidden_size)
     self.params['b2'] = np.zeros(output_size)
 
   def loss(self, X, y=None, reg=0.0):
@@ -75,7 +77,10 @@ class TwoLayerNet(object):
     # shape (N, C).                                                             #
     #############################################################################
     pass
-    h_output = np.maximum(0, X.dot(W1) + b1)  # RELU Activation
+    tmp = X.dot(W1) + b1
+    h_output = np.maximum(0.01 * tmp, tmp)  # Leaky RELU Activation
+    # h_output = np.maximum (0, tmp) # RELU Activation
+    # h_output = np.tanh(tmp) # Tanh Activation
     scores = h_output.dot(W2) + b2
     #############################################################################
     #                              END OF YOUR CODE                             #
@@ -128,7 +133,9 @@ class TwoLayerNet(object):
     grads['b2'] = np.sum(dscores, axis=0)
 
     dh = dscores.dot(W2.T)
-    dh_ReLu = (h_output > 0) * dh
+    # dh_ReLu = (h_output > 0) * dh
+    dh_ReLu = (h_output >= 0) * dh + (h_output < 0) * dh * 0.01
+    # dh_ReLu = (1.0 - np.tanh(h_output) ** 2) * dh
     grads['W1'] = X.T.dot(dh_ReLu) + reg * W1
     grads['b1'] = np.sum(dh_ReLu, axis=0)
     #############################################################################
@@ -140,7 +147,7 @@ class TwoLayerNet(object):
   def train(self, X, y, X_val, y_val,
             learning_rate=1e-3, learning_rate_decay=0.95,
             reg=1e-5, num_iters=100,
-            batch_size=200, verbose=False):
+            batch_size=200, momentum=0.9,verbose=False):
     """
     Train this neural network using stochastic gradient descent.
 
@@ -165,6 +172,13 @@ class TwoLayerNet(object):
     loss_history = []
     train_acc_history = []
     val_acc_history = []
+
+    self.params['VW2'] = 0
+    self.params['VW1'] = 0
+    self.params['cacheW2'] = 0
+    self.params['cacheW1'] = 0
+    self.params['MW2'] = 0
+    self.params['MW1'] = 0
 
     for it in xrange(num_iters):
       X_batch = None
@@ -193,15 +207,55 @@ class TwoLayerNet(object):
       # stored in the grads dictionary defined above.                         #
       #########################################################################
       pass
-      self.params['W2'] += - learning_rate * grads['W2']
+      # Vanilla
+      # self.params['W2'] += - learning_rate * grads['W2']
+      # self.params['W1'] += - learning_rate * grads['W1']
+
+      # Momentum
+      # self.params['VW2'] = momentum * self.params['VW2'] - learning_rate * grads['W2']
+      # self.params['W2'] += self.params['VW2']
+      # self.params['VW1'] = momentum * self.params['VW1'] - learning_rate * grads['W1']
+      # self.params['W1'] += self.params['VW1']
+
+      # Nesterov
+      # v_prevW2 = self.params['VW2']
+      # self.params['VW2'] = momentum * self.params['VW2'] - learning_rate * grads['W2']
+      # self.params['W2'] += -momentum * v_prevW2 + (1 + momentum) * self.params['VW2']
+      # v_prevW1 = self.params['VW1']
+      # self.params['VW1'] = momentum * self.params['VW1'] - learning_rate * grads['W1']
+      # self.params['W1'] += -momentum * v_prevW1 + (1 + momentum) * self.params['VW1']
+
+      # Adagrad
+      # self.params['cacheW2'] += grads['W2'] ** 2
+      # self.params['W2'] += - learning_rate * grads['W2'] / (np.sqrt(self.params['cacheW2']) + 1e-7)
+      # self.params['cacheW1'] += grads['W1'] ** 2
+      # self.params['W1'] += - learning_rate * grads['W1'] / (np.sqrt(self.params['cacheW1']) + 1e-7)
+
+      # rmsProbs
+      # self.params['cacheW2'] = 0.9 * self.params['cacheW2'] + (1 - 0.9) * grads['W2'] ** 2
+      # self.params['W2'] += - learning_rate * grads['W2'] / (np.sqrt(self.params['cacheW2']) + 1e-7)
+      # self.params['cacheW1'] = 0.9 * self.params['cacheW1'] + (1 - 0.9) * grads['W1'] ** 2
+      # self.params['W1'] += - learning_rate * grads['W1'] / (np.sqrt(self.params['cacheW1']) + 1e-7)
+
+      # Adam
+      self.params['MW2'] = 0.9 * self.params['MW2'] + (1 - 0.9) * grads['W2']
+      mtW2 = self.params['MW2'] / (1 - 0.9 ** (it+1))
+      self.params['VW2'] = 0.999 * self.params['VW2'] + (1 - 0.999) * (grads['W2'] ** 2)
+      vtW2 = self.params['VW2'] / (1- 0.999 ** (it+1))
+      self.params['W2'] += - learning_rate * mtW2 / (np.sqrt(vtW2) + 1e-8)
+      self.params['MW1'] = 0.9 * self.params['MW1'] + (1 - 0.9) * grads['W1']
+      mtW1 = self.params['MW1'] / (1 - 0.9 ** (it+1))
+      self.params['VW1'] = 0.999 * self.params['VW1'] + (1 - 0.999) * (grads['W1'] ** 2)
+      vtW1 = self.params['VW1'] / (1 - 0.999 ** (it+1))
+      self.params['W1'] += - learning_rate * mtW1 / (np.sqrt(vtW1) + 1e-8)
+
       self.params['b2'] += - learning_rate * grads['b2']
-      self.params['W1'] += - learning_rate * grads['W1']
       self.params['b1'] += - learning_rate * grads['b1']
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
 
-      if verbose and it % 100 == 0:
+      if verbose and it % 10 == 0:
         print 'iteration %d / %d: loss %f' % (it, num_iters, loss)
 
       # Every epoch, check train and val accuracy and decay learning rate.

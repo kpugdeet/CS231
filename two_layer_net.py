@@ -5,6 +5,7 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 from cs231n.classifiers.neural_net import TwoLayerNet
+from random import randint
 
 # %matplotlib inline
 plt.rcParams['figure.figsize'] = (10.0, 8.0) # set default size of plots
@@ -145,13 +146,13 @@ print 'Test labels shape: ', y_test.shape
 input_size = 32 * 32 * 3
 hidden_size = 50
 num_classes = 10
-net = TwoLayerNet(input_size, hidden_size, num_classes)
+net = TwoLayerNet(input_size, 100, num_classes)
 
 # Train the network
 stats = net.train(X_train, y_train, X_val, y_val,
-            num_iters=1000, batch_size=200,
-            learning_rate=1e-4, learning_rate_decay=0.95,
-            reg=0.5, verbose=True)
+            num_iters=1500, batch_size=200,
+            learning_rate=1.024315e-04, learning_rate_decay=0.95,
+            reg=7.061041e-03, verbose=True)
 
 # Predict on the validation set
 val_acc = (net.predict(X_val) == y_val).mean()
@@ -203,12 +204,33 @@ best_net = None # store the best model into this
 # automatically like we did on the previous exercises.                          #
 #################################################################################
 pass
-best_net = TwoLayerNet(input_size, 100, num_classes)
-# Train the network
-best_stats = best_net.train(X_train, y_train, X_val, y_val,
-            num_iters=1000, batch_size=200,
-            learning_rate=1e-4, learning_rate_decay=0.95,
-            reg=0.5, verbose=True)
+hidden_size = [75, 100, 125]
+
+results = {}
+best_val_acc = 0
+best_net = None
+
+learning_rates = np.array([0.7, 0.8, 0.9, 1, 1.1]) * 1e-3
+regularization_strengths = [0.75, 1, 1.25]
+
+print "Running"
+for i in range(100):
+    hs = 100
+    lr = 10**np.random.uniform(-3, -6)
+    reg = 10**np.random.uniform(-5, 5)
+    net = TwoLayerNet(input_size, hs, num_classes)
+    # Train the network
+    stats = net.train(X_train, y_train, X_val, y_val,
+                      num_iters=1500, batch_size=200,
+                      learning_rate=lr, learning_rate_decay=0.95,
+                      reg=reg, verbose=False)
+    val_acc = (net.predict(X_val) == y_val).mean()
+    print 'hs %d lr %e reg %e val accuracy: %f' % (hs, lr, reg, val_acc)
+    if val_acc > best_val_acc:
+        best_val_acc = val_acc
+        best_net = net
+    results[(hs, lr, reg)] = val_acc
+print 'best validation accuracy achieved during cross-validation: %f' % best_val_acc
 #################################################################################
 #                               END OF YOUR CODE                                #
 #################################################################################

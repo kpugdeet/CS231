@@ -10,6 +10,14 @@
           <option name="port" value="22" />
         </fileTransfer>
       </webServer>
+      <webServer id="fa1a21e4-d69e-450a-8352-a25d5d581073" name="128.230.213.66" url="http://128.230.213.66">
+        <fileTransfer host="128.230.213.66" port="22" rootFolder="/home/kpugdeet" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="22" />
+        </fileTransfer>
+      </webServer>
     </option>
   </component>
 </project>
